@@ -1,5 +1,9 @@
 package com.example.a03_enviarydevolverinformacion;
 
+import androidx.activity.result.ActivityResult;
+import androidx.activity.result.ActivityResultCallback;
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 
@@ -20,10 +24,14 @@ public class MainActivity extends AppCompatActivity {
     private Button btnDesencriptar;
     private Button btnCrearDir;
 
-    //PARA DEVOLVER
+    //FORMA VIEJA DE RECIBIR INFO
     //CONSTANTE
     private final int DIRECCIONES = 123;
     private final int TRACTORES = 133;
+
+    //LAUNCHERS (FORMA NUEVA DE RECIBIR INFO)
+    private ActivityResultLauncher<Intent> launcherDirecciones;
+    private ActivityResultLauncher<Intent> launcherTractores;
 
 
 
@@ -33,6 +41,9 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
 
         inicializaVariables();
+        //inicializamos los launchers
+        inicializaLaunchers();
+
 
 
         btnDesencriptar.setOnClickListener(new View.OnClickListener() {
@@ -63,12 +74,38 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onClick(View view) {
                 Intent intent = new Intent(MainActivity.this,CreateDirActivity.class);
+                //FORMA VIEJA DE RECIBIR INFO
                 startActivityForResult(intent, DIRECCIONES);
-
+                //FORMA NUEVA DE RECIBIR INFO
+                launcherDirecciones.launch(intent);
 
             }
         });
     }
+
+    private void inicializaLaunchers() {
+        //Registrar una actividad de retorno
+        //Parte 1 ¿Cómo lanzo la actividad hija?
+        //Parte 2 ¿Qué hago cuando mi hija termine?
+        launcherDirecciones = registerForActivityResult(
+                //1
+                new ActivityResultContracts.StartActivityForResult(),
+                //2
+                new ActivityResultCallback<ActivityResult>() {
+                    @Override
+                    public void onActivityResult(ActivityResult result) {
+                        if(result.getResultCode() == RESULT_OK){
+                            if(result.getData() != null){
+                                Bundle bundle = result.getData().getExtras();
+                                Direccion dir = (Direccion) bundle.getSerializable("DIR");
+                                Toast.makeText(MainActivity.this, dir.toString(), Toast.LENGTH_SHORT).show();
+                            }
+                        }
+                    }
+                }
+        );
+    }
+
     private void inicializaVariables() {
         txtPassword = findViewById(R.id.txtPasswordMain);
         txtEmail = findViewById(R.id.txtEmailMain);
@@ -76,7 +113,7 @@ public class MainActivity extends AppCompatActivity {
         btnCrearDir = findViewById(R.id.btnCrearDirMain);
     }
 
-    //Esto lo aplicamos para devolver, con el startActivityForResult lo necesitaremos.
+    //FORMA VIEJA DE RECIBIR INFO
     /**
      * Se activa al retornar de un startActivityForResult y dispara las acciones necesarias
      * @param requestCode -> identificador de la ventana que se ha cerrado (El tipo de dato que retorna)
@@ -95,7 +132,11 @@ public class MainActivity extends AppCompatActivity {
                     Bundle bundle = data.getExtras();
                     Direccion dir = (Direccion) bundle.getSerializable("DIR");
                     Toast.makeText(this, dir.toString(), Toast.LENGTH_SHORT).show();
+                }else{
+                    Toast.makeText(this, "No hay DATOS", Toast.LENGTH_SHORT).show();
                 }
+            }else{
+                Toast.makeText(this, "Ventana Cancelada", Toast.LENGTH_SHORT).show();
             }
         }
 
